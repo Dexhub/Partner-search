@@ -1,0 +1,25 @@
+# -*- coding: utf-8 -*-
+import scrapy
+from scrapy.linkextractors import LinkExtractor
+from scrapy.spiders import CrawlSpider, Rule
+
+
+class LinkedinSpider(CrawlSpider):
+    name = 'linkedin'
+    #allowed_domains = ['www.linkedin.com/in/']
+    start_urls = ['http://www.linkedin.com/in/himanshu1410/']
+
+    rules = (
+        Rule(LinkExtractor(allow=r'Items/'), callback='parse_item', follow=True),
+    )
+
+    def parse_item(self, response):
+        i = {}
+        yield {
+                'Full name': response.css("div.profile-overview-content h1::text").extract_first(),
+                'Title': response.css("div.profile-overview-content p::text").extract_first()
+            }
+        next_link = response.css("div.info a::attr(href)").extract_first()
+        if next_link is not None:
+            next_link = response.urljoin(next_link)
+            yield scrapy.Request(next_link, callback=self.parse_item)
